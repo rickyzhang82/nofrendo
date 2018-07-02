@@ -1,0 +1,85 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(src/nofrendo.c)
+AM_INIT_AUTOMAKE(nofrendo, 1.9)
+AM_CONFIG_HEADER(config.h)
+
+AC_CANONICAL_HOST
+AC_PROG_CC
+AC_PROG_RANLIB
+AC_STDC_HEADERS
+AC_PROG_MAKE_SET
+
+AC_CHECK_LIB(z, gzopen,
+[
+	CFLAGS="$CFLAGS -DZLIB"
+	LDFLAGS="$LDFLAGS -lz"
+],
+[])
+
+dnl Require SDL 1.2 just because it's the new stable version, and it's what I have
+dnl oh, and the blitters are a lot faster than in older SDL 1.1 releases
+NO_PATH_SDL([1.2.0], [],
+[
+AC_MSG_ERROR(I pity da foo who don't have SDL 1.2)
+])
+
+dnl hook for portability
+case "$target" in
+*beos*) SYSTEM=beos ;;
+*win*) SYSTEM=win32 ;;
+dnl hope for the best
+*) SYSTEM=unix
+esac
+AC_SUBST(SYSTEM)
+
+dnl debug option
+AC_ARG_ENABLE(debug,
+[  --enable-debug          Turn on debugging (default: no)],
+[case "${enableval}" in
+yes)
+	debug=true
+	CFLAGS="$CFLAGS -DDEBUG -W -Wall -g"
+	CFLAGS=`echo $CFLAGS | sed "s/-O2//"`
+	;;
+no)
+	debug=false
+	CFLAGS="$CFLAGS -DNDEBUG"
+	;;
+*)
+	AC_MSG_ERROR(bad value ${enableval} for --enable-debug)
+	;;
+esac
+],
+[
+	CFLAGS="$CFLAGS -DNDEBUG"
+])
+AM_CONDITIONAL(DEBUG, test x$debug = xtrue)
+
+AC_ARG_ENABLE(optimize,
+[  --enable-optimize       Turn on optimizations (default: no)],
+[case "${enableval}" in
+yes)
+	optimize=true
+	CFLAGS="$CFLAGS -O3 -mpentiumpro -fstrict-aliasing -fomit-frame-pointer -ffast-math -fexpensive-optimizations -funroll-loops"
+	;;
+no)
+	;;
+*)
+	AC_MSG_ERROR(bad value ${enableval} for --enable-optimize)
+	;;
+esac
+],
+[])
+AC_OUTPUT( \
+./Makefile \
+src/Makefile \
+src/beos/Makefile \
+src/cpu/Makefile \
+src/libsnss/Makefile \
+src/mappers/Makefile \
+src/nes/Makefile \
+src/sdl/Makefile \
+src/sndhrdw/Makefile \
+src/unix/Makefile \
+src/win32/Makefile \
+ ) 
